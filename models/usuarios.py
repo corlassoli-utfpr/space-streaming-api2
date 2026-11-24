@@ -1,4 +1,3 @@
-
 from database.conn import get_connection
 
 def buscar_por_email(email):
