@@ -1,3 +1,4 @@
+
 // Elementos da página utilizados pelo JavaScript
 const form = document.getElementById("form-busca");
 const tipo = document.getElementById("tipo-busca");
@@ -43,7 +44,7 @@ async function buscarVideos() {
 
     // Faz uma requisição para a rota de vídeos da API
     const resposta = await fetch(
-        `/videos/${encodeURIComponent(buscaAtual)}/${paginaAtual}`
+        `/videos?busca=${encodeURIComponent(buscaAtual)}&pagina=${paginaAtual}`
     );
 
     // Converte a resposta JSON da API para um objeto JavaScript
@@ -189,7 +190,7 @@ async function buscarEmpresas() {
 
     // Faz uma requisição para buscar empresas pelo nome
     const resposta = await fetch(
-        `/empresas/${encodeURIComponent(termo.value)}`
+        `/empresas?busca=${encodeURIComponent(termo.value)}`
     );
 
     // Converte a resposta JSON para um objeto JavaScript
