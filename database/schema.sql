@@ -31,3 +31,10 @@ CREATE TABLE videos (
     lancamento_id INT NOT NULL,
     FOREIGN KEY (lancamento_id) REFERENCES lancamentos(id)
 );
+
+CREATE TABLE usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    senha_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE
+);
