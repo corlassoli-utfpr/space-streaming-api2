@@ -1,6 +1,7 @@
 from flask import jsonify, request, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import usuarios
+import auth
 
 def cadastrar():
     dados = request.get_json(silent=True)
@@ -65,6 +66,7 @@ def login():
 
     session.clear() # Limpa a sessão atual para evitar conflitos com sessões anteriores
     session["usuario_id"] = usuario["id"] # Armazena o ID do usuário na sessão para manter o estado de login
+    session["usuario_nome"] = usuario["nome"]
 
     return jsonify({
         "mensagem": "Login realizado com sucesso",
@@ -82,11 +84,14 @@ def logout():
         "mensagem": "Logout realizado com sucesso"
     }), 200
 
-def verificar_login():
-    if "usuario_id" not in session: # Verifica se o usuário está autenticado na sessão atual
-        return jsonify({"erro": "Usuário não autenticado"}), 401
+def me():
+    if "usuario_id" not in session:
+        return jsonify({
+            "autenticado": False
+        }), 200
 
     return jsonify({
         "autenticado": True,
-        "usuario_id": session["usuario_id"]
+        "usuario_id": session["usuario_id"],
+        "usuario_nome": session["usuario_nome"]
     }), 200

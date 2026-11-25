@@ -26,3 +26,37 @@ def buscar_por_empresa(empresa_id):
         return resultado
     finally:
         cursor.close()
+
+def listar():
+    conexao = get_connection()
+    cursor = conexao.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT
+                l.id,
+                l.nome,
+                e.nome AS empresa
+            FROM lancamentos l
+            JOIN empresas e ON l.empresa_id = e.id
+            ORDER BY l.id DESC
+        """)
+
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+
+def buscar_por_id(id):
+    conexao = get_connection()
+    cursor = conexao.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT id, nome
+            FROM lancamentos
+            WHERE id = %s
+        """, (id,))
+
+        return cursor.fetchone()
+    finally:
+        cursor.close()

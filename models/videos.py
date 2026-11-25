@@ -34,3 +34,22 @@ def buscar(busca, pagina):
         return resultado
     finally:
         cursor.close()
+
+def criar(titulo, youtube_id, url, thumbnail, duracao, lancamento_id):
+    conexao = get_connection()
+    cursor = conexao.cursor()
+
+    try:
+        cursor.execute("""
+            INSERT INTO videos (titulo, youtube_id, url, thumbnail, duracao, lancamento_id)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (titulo, youtube_id, url, thumbnail, duracao, lancamento_id))
+
+        conexao.commit()
+
+        return cursor.lastrowid
+    except Exception:
+        conexao.rollback()
+        raise
+    finally:
+        cursor.close()
