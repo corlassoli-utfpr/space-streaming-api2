@@ -47,9 +47,9 @@ def criar(titulo, youtube_id, url, thumbnail, duracao, lancamento_id):
 
         conexao.commit()
 
-        return cursor.lastrowid
+        return cursor.lastrowid # Retorna o id do vídeo criado
     except Exception:
-        conexao.rollback()
+        conexao.rollback() # Desfaz a transação caso ocorra algum erro
         raise
     finally:
         cursor.close()
