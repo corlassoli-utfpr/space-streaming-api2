@@ -30,8 +30,8 @@ body {
 }
 
 header {
-    border-bottom: 1px solid var(--borda);
     padding: 18px 0;
+    border-bottom: 1px solid var(--borda);
 }
 
 header strong {
@@ -65,8 +65,8 @@ p {
 
 form {
     display: flex;
-    gap: 10px;
     flex-wrap: wrap;
+    gap: 10px;
 }
 
 input,
@@ -85,10 +85,7 @@ input {
     min-width: 220px;
 }
 
-select {
-    cursor: pointer;
-}
-
+select,
 button {
     cursor: pointer;
 }
@@ -136,17 +133,24 @@ button:hover {
     margin: 0;
 }
 
-#lista-resultados {
+/* Listas de resultados e lançamentos */
+
+#lista-resultados,
+.lista-simples {
     list-style: none;
     margin: 0;
     padding: 0;
+    border: 1px solid var(--borda);
+    background: var(--superficie);
 }
 
-#lista-resultados li {
+#lista-resultados li,
+.lista-simples li {
     border-bottom: 1px solid var(--borda);
 }
 
-#lista-resultados li:last-child {
+#lista-resultados li:last-child,
+.lista-simples li:last-child {
     border-bottom: 0;
 }
 
@@ -167,14 +171,18 @@ button:hover {
     background: #1d1d1d;
 }
 
-#lista-resultados small {
+#lista-resultados small,
+.lista-simples small {
     display: block;
     margin-top: 4px;
     color: var(--texto-suave);
 }
 
+.lista-simples li {
+    padding: 14px;
+}
 
-/* ---------- Paginação ---------- */
+/* Paginação */
 
 .paginacao {
     display: grid;
@@ -187,10 +195,6 @@ button:hover {
 .paginacao button {
     width: 90px;
     padding: 6px 8px;
-    border: 1px solid var(--borda);
-    border-radius: 3px;
-    background: var(--superficie);
-    color: var(--texto);
     font-size: 0.9rem;
 }
 
@@ -208,8 +212,7 @@ button:hover {
     color: var(--texto-suave);
 }
 
-
-/* ---------- Detalhes ---------- */
+/* Detalhes */
 
 .detalhes {
     display: grid;
@@ -229,24 +232,21 @@ button:hover {
     color: var(--texto);
 }
 
-
-/* ---------- Rodapé ---------- */
+/* Rodapé */
 
 footer {
-    border-top: 1px solid var(--borda);
     padding: 20px 0;
+    border-top: 1px solid var(--borda);
     color: var(--texto-suave);
 }
 
-
-/* ---------- Atributo hidden ---------- */
+/* Elementos ocultos */
 
 [hidden] {
     display: none !important;
 }
 
-
-/* ---------- Autenticação no cabeçalho ---------- */
+/* Autenticação */
 
 .barra {
     display: flex;
@@ -272,8 +272,7 @@ footer {
     color: var(--texto-suave);
 }
 
-
-/* ---------- Modais de login e cadastro ---------- */
+/* Modais */
 
 dialog {
     width: min(420px, 90vw);
@@ -324,31 +323,7 @@ dialog h2 {
     color: var(--texto-suave);
 }
 
-
-/* ---------- Lançamentos e novo vídeo ---------- */
-
-.lista-simples {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    border: 1px solid var(--borda);
-    background: var(--superficie);
-}
-
-.lista-simples li {
-    padding: 14px;
-    border-bottom: 1px solid var(--borda);
-}
-
-.lista-simples li:last-child {
-    border-bottom: 0;
-}
-
-.lista-simples small {
-    display: block;
-    margin-top: 4px;
-    color: var(--texto-suave);
-}
+/* Formulário de novo vídeo */
 
 .form-video {
     display: grid;
@@ -359,13 +334,13 @@ dialog h2 {
     background: var(--superficie);
 }
 
-.form-video input {
-    min-width: 0;
+.form-video input,
+.form-video select {
     background: var(--fundo);
 }
 
-.form-video select {
-    background: var(--fundo);
+.form-video input {
+    min-width: 0;
 }
 
 .form-video .mensagem,
@@ -377,11 +352,9 @@ dialog h2 {
     justify-self: start;
 }
 
-
-/* ---------- Responsividade ---------- */
+/* Responsividade */
 
 @media (max-width: 800px) {
-
     .conteudo,
     .detalhes {
         grid-template-columns: 1fr;

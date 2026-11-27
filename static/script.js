@@ -1,29 +1,28 @@
-// Elementos da página utilizados pelo JavaScript
+// Elementos HTML utilizados na busca
 const form = document.getElementById("form-busca");
 const tipo = document.getElementById("tipo-busca");
 const termo = document.getElementById("termo");
 const lista = document.getElementById("lista-resultados");
 
-// Guarda a busca atual e a página em que o usuário está
+// Guarda o termo pesquisado, a página atual e o total de vídeos encontrados
 let buscaAtual = "";
 let paginaAtual = 1;
 let totalVideos = 0;
 
 
-/* Realiza a busca escolhida pelo usuário */
+/* ---------- Busca ---------- */
 
+// Identifica o tipo de pesquisa selecionado pelo usuário
 form.addEventListener("submit", function(evento) {
 
-    // Impede o formulário de recarregar a página
+    // Impede que o formulário recarregue a página
     evento.preventDefault();
 
-    // Verifica qual tipo de busca foi selecionado
     if (tipo.value === "videos") {
 
-        // Guarda o termo pesquisado e inicia pela primeira página
+        // Salva a busca e volta para a primeira página
         buscaAtual = termo.value;
         paginaAtual = 1;
-
         buscarVideos();
 
     } else if (tipo.value === "empresas") {
@@ -32,7 +31,7 @@ form.addEventListener("submit", function(evento) {
 
     } else {
 
-        // Busca uma empresa diretamente pelo seu ID
+        // Pesquisa uma empresa utilizando seu ID
         mostrarEmpresa(termo.value);
     }
 });
@@ -42,37 +41,33 @@ form.addEventListener("submit", function(evento) {
 
 async function buscarVideos() {
 
-    // Faz uma requisição para a rota de vídeos da API
+    // Envia o termo e o número da página para a rota de vídeos
     const resposta = await fetch(
         `/videos?busca=${encodeURIComponent(buscaAtual)}&pagina=${paginaAtual}`
     );
 
-    // Converte a resposta JSON para um objeto JavaScript
+    // A API retorna os vídeos e a quantidade total de resultados
     const dados = await resposta.json();
-
-    // Separa os vídeos e a quantidade total de resultados
     const videos = dados.videos;
+
     totalVideos = dados.total;
 
-    // Limpa os resultados anteriores
+    // Remove os resultados da busca anterior
     lista.innerHTML = "";
 
-    // Verifica se nenhum vídeo foi encontrado
+    // Exibe uma mensagem caso nenhum vídeo seja encontrado
     if (videos.length === 0) {
-
         lista.innerHTML =
             "<li><button disabled>Nenhum vídeo encontrado.</button></li>";
-
         return;
     }
 
-
-    // Percorre os vídeos recebidos e cria um resultado para cada um
+    // Cria um item na lista para cada vídeo recebido da API
     videos.forEach(function(video) {
 
         const item = document.createElement("li");
 
-        // Monta o conteúdo que será exibido na lista
+        // Exibe o título, a duração e a empresa do vídeo
         item.innerHTML = `
             <button type="button">
                 <strong>${video.titulo}</strong>
@@ -80,7 +75,7 @@ async function buscarVideos() {
             </button>
         `;
 
-        // Ao clicar no vídeo, exibe seus detalhes
+        // Ao clicar, abre o vídeo selecionado no player
         item.querySelector("button").onclick = function() {
             mostrarVideo(video);
         };
@@ -88,27 +83,26 @@ async function buscarVideos() {
         lista.appendChild(item);
     });
 
-
-    // Adiciona os botões de navegação entre as páginas
+    // Cria os controles de navegação entre as páginas
     adicionarPaginacao();
 }
 
 
-/* ---------- Paginação dos vídeos ---------- */
+/* ---------- Paginação ---------- */
 
 function adicionarPaginacao() {
 
-    // Define a quantidade de vídeos utilizada pelo projeto
+    // Define quantos vídeos serão exibidos em cada página
     const videosPorPagina = 5;
 
-    // Calcula o número total de páginas
+    // Calcula o total de páginas com base na quantidade de resultados
     const ultimaPagina = Math.ceil(totalVideos / videosPorPagina);
-
     const item = document.createElement("li");
 
     item.className = "paginacao";
 
-    // Cria os botões e exibe a página atual
+    // Cria os botões e informa a página atual
+    // O botão correspondente fica desabilitado quando não pode ser utilizado
     item.innerHTML = `
         <button type="button" id="anterior"
             ${paginaAtual === 1 ? "disabled" : ""}>
@@ -125,21 +119,15 @@ function adicionarPaginacao() {
 
     lista.appendChild(item);
 
-
-    // Volta uma página e realiza uma nova busca
+    // Diminui o número da página e realiza uma nova busca
     document.getElementById("anterior").onclick = function() {
-
         paginaAtual--;
-
         buscarVideos();
     };
 
-
-    // Avança uma página e realiza uma nova busca
+    // Aumenta o número da página e realiza uma nova busca
     document.getElementById("proxima").onclick = function() {
-
         paginaAtual++;
-
         buscarVideos();
     };
 }
@@ -149,38 +137,28 @@ function adicionarPaginacao() {
 
 async function mostrarVideo(video) {
 
-    // Define o vídeo selecionado no player do YouTube
+    // Carrega o vídeo selecionado no player do YouTube
     document.getElementById("player-youtube").src =
         `https://www.youtube-nocookie.com/embed/${video.youtube_id}`;
 
-    // Exibe as informações básicas do vídeo
-    document.getElementById("titulo-video").textContent =
-        video.titulo;
+    // Atualiza o título e as informações do vídeo
+    document.getElementById("titulo-video").textContent = video.titulo;
 
     document.getElementById("info-video").textContent =
         `Lançamento: ${video.lancamento} · Empresa: ${video.empresa}`;
 
-
-    // Busca a empresa relacionada ao vídeo
-    const resposta = await fetch(
-        `/empresas/${video.empresa_id}`
-    );
-
-    // Converte a resposta JSON para um objeto JavaScript
+    // Busca os detalhes da empresa relacionada ao vídeo
+    const resposta = await fetch(`/empresas/${video.empresa_id}`);
     const empresa = await resposta.json();
 
-    // Exibe os dados da empresa
     mostrarEmpresaDetalhes(empresa);
 
-
-    // Procura, entre os lançamentos da empresa,
-    // aquele relacionado ao vídeo selecionado
+    // Procura o lançamento relacionado ao vídeo dentro da lista da empresa
     const lancamento = empresa.lancamentos.find(function(item) {
-
         return item.id === video.lancamento_id;
     });
 
-    // Exibe o lançamento encontrado
+    // Exibe os detalhes do lançamento caso ele seja encontrado
     if (lancamento) {
         mostrarLancamento(lancamento);
     }
@@ -191,33 +169,27 @@ async function mostrarVideo(video) {
 
 async function buscarEmpresas() {
 
-    // Faz uma requisição para buscar empresas pelo nome
+    // Busca empresas pelo nome informado
     const resposta = await fetch(
         `/empresas?busca=${encodeURIComponent(termo.value)}`
     );
 
-    // Converte a resposta JSON para um objeto JavaScript
     const empresas = await resposta.json();
 
     // Limpa os resultados anteriores
     lista.innerHTML = "";
 
-    // Verifica se nenhuma empresa foi encontrada
     if (empresas.length === 0) {
-
         lista.innerHTML =
             "<li><button disabled>Nenhuma empresa encontrada.</button></li>";
-
         return;
     }
 
-
-    // Percorre as empresas encontradas
+    // Cria um item para cada empresa encontrada
     empresas.forEach(function(empresa) {
 
         const item = document.createElement("li");
 
-        // Cria o resultado da empresa
         item.innerHTML = `
             <button type="button">
                 <strong>${empresa.nome}</strong>
@@ -239,42 +211,31 @@ async function buscarEmpresas() {
 
 async function mostrarEmpresa(id) {
 
-    // Busca uma empresa diretamente pelo seu ID
-    const resposta = await fetch(
-        `/empresas/${encodeURIComponent(id)}`
-    );
+    // Solicita os dados de uma empresa específica
+    const resposta = await fetch(`/empresas/${encodeURIComponent(id)}`);
 
-    // Verifica se a empresa não foi encontrada
+    // Verifica se a API encontrou a empresa
     if (!resposta.ok) {
-
         lista.innerHTML =
             "<li><button disabled>Empresa não encontrada.</button></li>";
-
         return;
     }
 
-    // Converte a resposta JSON para um objeto JavaScript
     const empresa = await resposta.json();
 
-    // Exibe os dados da empresa
+    // Atualiza os detalhes da empresa
     mostrarEmpresaDetalhes(empresa);
 
-    // Remove qualquer vídeo que esteja sendo exibido
+    // Remove o vídeo anterior do player e exibe o nome da empresa
     document.getElementById("player-youtube").src = "";
+    document.getElementById("titulo-video").textContent = empresa.nome;
 
-    // Exibe o nome da empresa na área do player
-    document.getElementById("titulo-video").textContent =
-        empresa.nome;
-
-    // Informa a quantidade de lançamentos associados
     document.getElementById("info-video").textContent =
         `${empresa.lancamentos.length} lançamento(s)`;
 
-
-    // Limpa os resultados anteriores
     lista.innerHTML = "";
 
-    // Exibe os lançamentos relacionados à empresa
+    // Exibe os lançamentos associados à empresa
     empresa.lancamentos.forEach(function(lancamento) {
 
         const item = document.createElement("li");
@@ -286,7 +247,7 @@ async function mostrarEmpresa(id) {
             </button>
         `;
 
-        // Ao clicar, exibe os detalhes do lançamento
+        // Permite selecionar um lançamento para visualizar seus detalhes
         item.querySelector("button").onclick = function() {
             mostrarLancamento(lancamento);
         };
@@ -298,51 +259,33 @@ async function mostrarEmpresa(id) {
 
 /* ---------- Exibição dos detalhes ---------- */
 
+// Preenche os campos de informações da empresa
 function mostrarEmpresaDetalhes(empresa) {
-
-    // Preenche os campos de informações da empresa
-    document.getElementById("empresa-nome").textContent =
-        empresa.nome;
-
-    document.getElementById("empresa-descricao").textContent =
-        empresa.descricao;
+    document.getElementById("empresa-nome").textContent = empresa.nome;
+    document.getElementById("empresa-descricao").textContent = empresa.descricao;
 }
 
 
+// Preenche os campos de informações do lançamento
 function mostrarLancamento(lancamento) {
-
-    // Preenche os campos de informações do lançamento
-    document.getElementById("lancamento-nome").textContent =
-        lancamento.nome;
-
-    document.getElementById("lancamento-data").textContent =
-        lancamento.data;
-
-    document.getElementById("lancamento-foguete").textContent =
-        lancamento.foguete;
-
-    document.getElementById("lancamento-missao").textContent =
-        lancamento.missao;
-
-    document.getElementById("lancamento-local").textContent =
-        lancamento.local;
-
-    document.getElementById("lancamento-status").textContent =
-        lancamento.status;
-
-    document.getElementById("lancamento-descricao").textContent =
-        lancamento.descricao;
+    document.getElementById("lancamento-nome").textContent = lancamento.nome;
+    document.getElementById("lancamento-data").textContent = lancamento.data;
+    document.getElementById("lancamento-foguete").textContent = lancamento.foguete;
+    document.getElementById("lancamento-missao").textContent = lancamento.missao;
+    document.getElementById("lancamento-local").textContent = lancamento.local;
+    document.getElementById("lancamento-status").textContent = lancamento.status;
+    document.getElementById("lancamento-descricao").textContent = lancamento.descricao;
 }
 
 
-/* ---------- Autenticação, lançamentos e cadastro de vídeos ---------- */
+/* ---------- Autenticação e cadastro ---------- */
 
-// Elementos do cabeçalho
+// Elementos responsáveis pela exibição do estado de autenticação
 const areaDeslogado = document.getElementById("auth-deslogado");
 const areaLogado = document.getElementById("auth-logado");
 const usuarioNome = document.getElementById("usuario-nome");
 
-// Modais e formulários
+// Formulários, modais e seção de cadastro de vídeos
 const modalLogin = document.getElementById("modal-login");
 const modalCadastro = document.getElementById("modal-cadastro");
 const formLogin = document.getElementById("form-login");
@@ -350,39 +293,46 @@ const formCadastro = document.getElementById("form-cadastro");
 const formVideo = document.getElementById("form-video");
 const secaoNovoVideo = document.getElementById("secao-novo-video");
 
+// Elementos utilizados para exibir mensagens
 const loginMsg = document.getElementById("login-msg");
 const cadastroMsg = document.getElementById("cadastro-msg");
 const videoMsg = document.getElementById("video-msg");
 
+// Lista de lançamentos e campo de seleção do formulário de vídeo
 const listaLancamentos = document.getElementById("lista-lancamentos");
 const selectLancamento = document.getElementById("video-lancamento");
 
 
 /* ---------- Funções auxiliares ---------- */
 
-// Envia JSON para a API e devolve sempre um objeto padronizado
+// Centraliza o envio de requisições com JSON para a API
 async function enviarJson(url, metodo, corpo) {
 
     try {
 
+        // Configura o método HTTP, os cabeçalhos e o corpo da requisição
         const resposta = await fetch(url, {
             method: metodo,
             headers: { "Content-Type": "application/json" },
             body: corpo ? JSON.stringify(corpo) : undefined
         });
 
-        let dados = {};
+        // Tenta converter a resposta para JSON
+        // Caso não exista um JSON válido, utiliza um objeto vazio
+        const dados = await resposta.json().catch(function() {
+            return {};
+        });
 
-        try {
-            dados = await resposta.json();
-        } catch (erro) {
-            // Resposta sem JSON: mantém o objeto vazio
-        }
-
-        return { ok: resposta.ok, status: resposta.status, dados: dados };
+        // Retorna o resultado da requisição em um formato padronizado
+        return {
+            ok: resposta.ok,
+            status: resposta.status,
+            dados: dados
+        };
 
     } catch (erro) {
 
+        // Trata falhas de conexão com o servidor
         return {
             ok: false,
             status: 0,
@@ -392,20 +342,17 @@ async function enviarJson(url, metodo, corpo) {
 }
 
 
-// Exibe uma mensagem de erro ou sucesso em um elemento <p class="mensagem">
+// Exibe uma mensagem e aplica a classe correspondente ao seu tipo
 function mostrarMensagem(elemento, texto, tipo) {
-
     elemento.textContent = texto;
     elemento.className = "mensagem" + (texto ? " " + tipo : "");
 }
 
 
-// Limpa e abre um modal
+// Limpa os campos e as mensagens antes de abrir um modal
 function abrirModal(modal, formulario, mensagem) {
-
     formulario.reset();
     mostrarMensagem(mensagem, "", "");
-
     modal.showModal();
 }
 
@@ -414,19 +361,19 @@ function abrirModal(modal, formulario, mensagem) {
 
 function atualizarAutenticacao(autenticado, nome) {
 
-    // Alterna entre os botões de visitante e de usuário logado
+    // Exibe os elementos correspondentes ao estado atual do usuário
     areaDeslogado.hidden = autenticado;
     areaLogado.hidden = !autenticado;
 
-    // Somente usuários logados podem adicionar vídeos
+    // O formulário de cadastro de vídeos só aparece para usuários logados
     secaoNovoVideo.hidden = !autenticado;
 
     usuarioNome.textContent = autenticado ? `Olá, ${nome}` : "";
 }
 
 
+// Verifica se já existe uma sessão autenticada no servidor
 async function verificarSessao() {
-
     const resposta = await enviarJson("/auth/me", "GET");
 
     atualizarAutenticacao(
@@ -438,24 +385,26 @@ async function verificarSessao() {
 
 /* ---------- Abertura e fechamento dos modais ---------- */
 
+// Abre o formulário de login
 document.getElementById("btn-entrar").onclick = function() {
     abrirModal(modalLogin, formLogin, loginMsg);
 };
 
+// Abre o formulário de cadastro de usuário
 document.getElementById("btn-cadastrar").onclick = function() {
     abrirModal(modalCadastro, formCadastro, cadastroMsg);
 };
 
+// Configura o fechamento dos dois modais
 [modalLogin, modalCadastro].forEach(function(modal) {
 
-    // Botão "Cancelar"
+    // Fecha o modal pelo botão de cancelar
     modal.querySelector("[data-fechar]").onclick = function() {
         modal.close();
     };
 
-    // Clique fora da caixa (no fundo escuro) fecha o modal
+    // Também fecha o modal quando o usuário clica fora de sua caixa
     modal.addEventListener("click", function(evento) {
-
         if (evento.target === modal) {
             modal.close();
         }
@@ -466,29 +415,27 @@ document.getElementById("btn-cadastrar").onclick = function() {
 /* ---------- Login ---------- */
 
 formLogin.addEventListener("submit", async function(evento) {
-
     evento.preventDefault();
-
     mostrarMensagem(loginMsg, "", "");
 
+    // Envia as credenciais para a rota de autenticação
     const resposta = await enviarJson("/auth/login", "POST", {
         email: document.getElementById("login-email").value,
         senha: document.getElementById("login-senha").value
     });
 
+    // Exibe o erro retornado pela API caso o login falhe
     if (!resposta.ok) {
-
         mostrarMensagem(
             loginMsg,
             resposta.dados.erro || "Não foi possível entrar.",
             "erro"
         );
-
         return;
     }
 
+    // Fecha o modal e atualiza a interface para usuário autenticado
     modalLogin.close();
-
     atualizarAutenticacao(true, resposta.dados.usuario.nome);
 });
 
@@ -496,14 +443,13 @@ formLogin.addEventListener("submit", async function(evento) {
 /* ---------- Cadastro ---------- */
 
 formCadastro.addEventListener("submit", async function(evento) {
-
     evento.preventDefault();
-
     mostrarMensagem(cadastroMsg, "", "");
 
     const email = document.getElementById("cadastro-email").value;
     const senha = document.getElementById("cadastro-senha").value;
 
+    // Envia os dados para criar um novo usuário
     const cadastro = await enviarJson("/usuarios", "POST", {
         nome: document.getElementById("cadastro-nome").value,
         email: email,
@@ -511,17 +457,15 @@ formCadastro.addEventListener("submit", async function(evento) {
     });
 
     if (!cadastro.ok) {
-
         mostrarMensagem(
             cadastroMsg,
             cadastro.dados.erro || "Não foi possível cadastrar.",
             "erro"
         );
-
         return;
     }
 
-    // Após cadastrar, já realiza o login automaticamente
+    // Após cadastrar, tenta autenticar o usuário automaticamente
     const login = await enviarJson("/auth/login", "POST", {
         email: email,
         senha: senha
@@ -531,11 +475,12 @@ formCadastro.addEventListener("submit", async function(evento) {
 
     if (login.ok) {
 
+        // Atualiza a interface após o login automático
         atualizarAutenticacao(true, login.dados.usuario.nome);
 
     } else {
 
-        // Se o login automático falhar, pede para entrar manualmente
+        // Caso o login automático falhe, solicita login manual
         abrirModal(modalLogin, formLogin, loginMsg);
 
         mostrarMensagem(
@@ -547,26 +492,26 @@ formCadastro.addEventListener("submit", async function(evento) {
 });
 
 
-/* ---------- Botão "Adicionar vídeo" do cabeçalho ---------- */
+/* ---------- Adicionar vídeo ---------- */
 
+// Leva o usuário até o formulário de cadastro de vídeos
 document.getElementById("btn-novo-video").onclick = function() {
-
-    // Rola suavemente até o formulário de novo vídeo
     secaoNovoVideo.scrollIntoView({ behavior: "smooth", block: "start" });
 
-    // Coloca o cursor no primeiro campo, sem interromper a rolagem
-    document.getElementById("video-titulo").focus({ preventScroll: true });
+    // Coloca o cursor no campo de título sem interromper a rolagem
+    document.getElementById("video-titulo").focus({
+        preventScroll: true
+    });
 };
 
 
 /* ---------- Logout ---------- */
 
+// Encerra a sessão no servidor e atualiza a interface
 document.getElementById("btn-sair").onclick = async function() {
-
     await enviarJson("/auth/logout", "POST");
 
     atualizarAutenticacao(false);
-
     mostrarMensagem(videoMsg, "", "");
 };
 
@@ -575,45 +520,38 @@ document.getElementById("btn-sair").onclick = async function() {
 
 async function carregarLancamentos() {
 
+    // Busca todos os lançamentos disponíveis na API
     const resposta = await enviarJson("/lancamentos", "GET");
 
     listaLancamentos.innerHTML = "";
 
+    // Verifica se a requisição falhou ou retornou dados inválidos
     if (!resposta.ok || !Array.isArray(resposta.dados)) {
-
-        const item = document.createElement("li");
-        item.textContent = "Não foi possível carregar os lançamentos.";
-        listaLancamentos.appendChild(item);
-
+        listaLancamentos.innerHTML =
+            "<li>Não foi possível carregar os lançamentos.</li>";
         return;
     }
 
     if (resposta.dados.length === 0) {
-
-        const item = document.createElement("li");
-        item.textContent = "Nenhum lançamento cadastrado.";
-        listaLancamentos.appendChild(item);
-
+        listaLancamentos.innerHTML =
+            "<li>Nenhum lançamento cadastrado.</li>";
         return;
     }
 
+    // Percorre os lançamentos recebidos e adiciona cada um à lista
     resposta.dados.forEach(function(lancamento) {
-
-        // Item da lista de lançamentos
         const item = document.createElement("li");
-
         const nome = document.createElement("strong");
-        nome.textContent = lancamento.nome;
-
         const empresa = document.createElement("small");
+
+        nome.textContent = lancamento.nome;
         empresa.textContent = lancamento.empresa;
 
         item.appendChild(nome);
         item.appendChild(empresa);
-
         listaLancamentos.appendChild(item);
 
-        // Opção correspondente no formulário de novo vídeo
+        // Adiciona o lançamento também ao campo de seleção do formulário
         const opcao = document.createElement("option");
         opcao.value = lancamento.id;
         opcao.textContent = `${lancamento.nome} · ${lancamento.empresa}`;
@@ -623,36 +561,38 @@ async function carregarLancamentos() {
 }
 
 
-/* ---------- Novo vídeo ---------- */
+/* ---------- Preenchimento automático do YouTube ---------- */
 
-// Ao colar a URL do YouTube, preenche o ID e a thumbnail automaticamente
+// Extrai o ID do vídeo e preenche a thumbnail ao informar uma URL
 document.getElementById("video-url").addEventListener("input", function() {
 
+    // Identifica o ID em formatos comuns de links do YouTube
     const encontrado = this.value.match(
         /(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)([\w-]{11})/
     );
 
-    if (!encontrado) {
-        return;
-    }
+    if (!encontrado) return;
 
     const id = encontrado[1];
     const thumbnail = document.getElementById("video-thumbnail");
 
+    // Preenche o campo com o ID encontrado
     document.getElementById("video-youtube-id").value = id;
 
+    // Gera a URL da thumbnail somente se o campo estiver vazio
     if (!thumbnail.value) {
         thumbnail.value = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
     }
 });
 
 
+/* ---------- Cadastro de novo vídeo ---------- */
+
 formVideo.addEventListener("submit", async function(evento) {
-
     evento.preventDefault();
-
     mostrarMensagem(videoMsg, "", "");
 
+    // Envia os dados do formulário para cadastrar um vídeo
     const resposta = await enviarJson("/videos", "POST", {
         titulo: document.getElementById("video-titulo").value,
         youtube_id: document.getElementById("video-youtube-id").value,
@@ -662,9 +602,8 @@ formVideo.addEventListener("submit", async function(evento) {
         lancamento_id: Number(selectLancamento.value)
     });
 
-    // Sessão expirada: volta para o estado deslogado e pede novo login
+    // Verifica se a sessão expirou e solicita novo login
     if (resposta.status === 401) {
-
         atualizarAutenticacao(false);
         abrirModal(modalLogin, formLogin, loginMsg);
 
@@ -673,12 +612,11 @@ formVideo.addEventListener("submit", async function(evento) {
             "Sua sessão expirou. Entre novamente.",
             "erro"
         );
-
         return;
     }
 
+    // Exibe o erro retornado pela API caso o cadastro falhe
     if (!resposta.ok) {
-
         mostrarMensagem(
             videoMsg,
             resposta.dados.erro || "Não foi possível adicionar o vídeo.",
@@ -686,20 +624,20 @@ formVideo.addEventListener("submit", async function(evento) {
         );
 
         videoMsg.scrollIntoView({ behavior: "smooth", block: "nearest" });
-
         return;
     }
 
+    // Limpa o formulário e informa que o cadastro foi concluído
     formVideo.reset();
-
     mostrarMensagem(videoMsg, "Vídeo adicionado com sucesso!", "ok");
 
-    // Atualiza a lista de vídeos após o cadastro
+    // Volta para a primeira página e remove filtros anteriores
     paginaAtual = 1;
     buscaAtual = "";
     tipo.value = "videos";
     termo.value = "";
 
+    // Atualiza a lista para incluir o vídeo recém-cadastrado
     buscarVideos();
 
     videoMsg.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -708,5 +646,6 @@ formVideo.addEventListener("submit", async function(evento) {
 
 /* ---------- Inicialização ---------- */
 
+// Verifica a autenticação e carrega os lançamentos ao abrir a página
 verificarSessao();
 carregarLancamentos();
