@@ -2,13 +2,22 @@ from database.conn import get_connection
 
 def buscar(busca, pagina):
     conexao = get_connection()
-    cursor = conexao.cursor(dictionary=True) # Retorna em formato de dicionário
+    cursor = conexao.cursor(dictionary=True)
 
     try:
-        limite = 5 # Quantidade de vídeos por página
-        offset = (pagina - 1) * limite # Quantidade de vídeos que serão pulados de acordo com a página
+        limite = 5
+        offset = (pagina - 1) * limite
 
-        # Recebe as informações do vídeo e realiza JOIN para identificar o lançamento e a empresa relacionados.
+        # Conta o total de vídeos encontrados pela busca
+        cursor.execute("""
+            SELECT COUNT(*) AS total
+            FROM videos v
+            WHERE v.titulo LIKE %s
+        """, ("%" + busca + "%",))
+
+        total = cursor.fetchone()["total"]
+
+        # Busca os vídeos da página solicitada
         cursor.execute("""
             SELECT
                 v.id,
@@ -27,13 +36,18 @@ def buscar(busca, pagina):
             WHERE v.titulo LIKE %s
             ORDER BY v.id
             LIMIT %s OFFSET %s
-        """, ("%" + busca + "%", limite, offset)) # Busca por substring, com limite e paginação
+        """, ("%" + busca + "%", limite, offset))
 
         resultado = cursor.fetchall()
 
-        return resultado
+        return {
+            "videos": resultado,
+            "total": total
+        }
+
     finally:
         cursor.close()
+
 
 def criar(titulo, youtube_id, url, thumbnail, duracao, lancamento_id):
     conexao = get_connection()
@@ -47,9 +61,11 @@ def criar(titulo, youtube_id, url, thumbnail, duracao, lancamento_id):
 
         conexao.commit()
 
-        return cursor.lastrowid # Retorna o id do vídeo criado
+        return cursor.lastrowid
+
     except Exception:
-        conexao.rollback() # Desfaz a transação caso ocorra algum erro
+        conexao.rollback()
         raise
+
     finally:
         cursor.close()

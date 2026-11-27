@@ -1,4 +1,3 @@
-
 // Elementos da página utilizados pelo JavaScript
 const form = document.getElementById("form-busca");
 const tipo = document.getElementById("tipo-busca");
@@ -8,6 +7,7 @@ const lista = document.getElementById("lista-resultados");
 // Guarda a busca atual e a página em que o usuário está
 let buscaAtual = "";
 let paginaAtual = 1;
+let totalVideos = 0;
 
 
 /* Realiza a busca escolhida pelo usuário */
@@ -47,8 +47,12 @@ async function buscarVideos() {
         `/videos?busca=${encodeURIComponent(buscaAtual)}&pagina=${paginaAtual}`
     );
 
-    // Converte a resposta JSON da API para um objeto JavaScript
-    const videos = await resposta.json();
+    // Converte a resposta JSON para um objeto JavaScript
+    const dados = await resposta.json();
+
+    // Separa os vídeos e a quantidade total de resultados
+    const videos = dados.videos;
+    totalVideos = dados.total;
 
     // Limpa os resultados anteriores
     lista.innerHTML = "";
@@ -95,7 +99,6 @@ async function buscarVideos() {
 function adicionarPaginacao() {
 
     // Define a quantidade de vídeos utilizada pelo projeto
-    const totalVideos = 10;
     const videosPorPagina = 5;
 
     // Calcula o número total de páginas
@@ -112,7 +115,7 @@ function adicionarPaginacao() {
             Anterior
         </button>
 
-        <span>Página ${paginaAtual}</span>
+        <span>Página ${paginaAtual} de ${ultimaPagina}</span>
 
         <button type="button" id="proxima"
             ${paginaAtual === ultimaPagina ? "disabled" : ""}>
@@ -330,6 +333,7 @@ function mostrarLancamento(lancamento) {
     document.getElementById("lancamento-descricao").textContent =
         lancamento.descricao;
 }
+
 
 /* ---------- Autenticação, lançamentos e cadastro de vídeos ---------- */
 
@@ -689,6 +693,14 @@ formVideo.addEventListener("submit", async function(evento) {
     formVideo.reset();
 
     mostrarMensagem(videoMsg, "Vídeo adicionado com sucesso!", "ok");
+
+    // Atualiza a lista de vídeos após o cadastro
+    paginaAtual = 1;
+    buscaAtual = "";
+    tipo.value = "videos";
+    termo.value = "";
+
+    buscarVideos();
 
     videoMsg.scrollIntoView({ behavior: "smooth", block: "nearest" });
 });
