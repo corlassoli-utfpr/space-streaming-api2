@@ -1,5 +1,6 @@
 from flask import jsonify, request
-from models import videos, lancamentos
+from models import videos
+from models import lancamentos
 
 def buscar(busca, pagina): # Chama a função do model e retorna o resultado em json
     resultado = videos.buscar(busca, pagina)
@@ -7,55 +8,54 @@ def buscar(busca, pagina): # Chama a função do model e retorna o resultado em 
     return jsonify(resultado)
 
 def criar():
-    dados = request.get_json(silent=True)
+    dados = request.get_json(silent=True) # Evita que o request.json retorne erro caso não seja enviado um json válido
 
-    if not isinstance(dados, dict): # Verifica se os dados são um dicionário
+    if not isinstance(dados, dict): # Verifica se os dados recebidos são um dicionário
         return jsonify({"erro": "Dados inválidos ou não informados"}), 400
 
     titulo = dados.get("titulo")
     youtube_id = dados.get("youtube_id")
     url = dados.get("url")
-    thumbnail = dados.get("thumbnail") or None # Campo opcional
+    thumbnail = dados.get("thumbnail")
     duracao = dados.get("duracao")
     lancamento_id = dados.get("lancamento_id")
 
-    obrigatorios = [titulo, youtube_id, url, duracao]
+    campos_texto = [titulo, youtube_id, url, thumbnail, duracao]
 
-    if not all(isinstance(campo, str) for campo in obrigatorios):
+    if not all(isinstance(campo, str) for campo in campos_texto): # Verifica se todos os campos são do tipo string
         return jsonify({"erro": "Os campos devem ser textos"}), 400
-
-    if thumbnail is not None and not isinstance(thumbnail, str):
-        return jsonify({"erro": "Os campos devem ser textos"}), 400
-
-    # bool é subclasse de int em Python, por isso é excluído explicitamente
-    if not isinstance(lancamento_id, int) or isinstance(lancamento_id, bool):
-        return jsonify({"erro": "Lançamento inválido"}), 400
 
     titulo = titulo.strip()
     youtube_id = youtube_id.strip()
     url = url.strip()
+    thumbnail = thumbnail.strip()
     duracao = duracao.strip()
 
-    if thumbnail is not None:
-        thumbnail = thumbnail.strip() or None
+    if not all([titulo, youtube_id, url, thumbnail, duracao]):
+        return jsonify({"erro": "Preencha todos os campos"}), 400
 
-    if not titulo or not youtube_id or not url or not duracao:
-        return jsonify({"erro": "Preencha todos os campos obrigatórios"}), 400
+    if type(lancamento_id) is not int or lancamento_id <= 0:
+        return jsonify({"erro": "ID do lançamento inválido"}), 400
 
-    if (len(titulo) > 200 or len(youtube_id) > 50 or len(url) > 255
-            or len(duracao) > 20 or (thumbnail and len(thumbnail) > 255)):
-        return jsonify({"erro": "Um ou mais campos excedem o tamanho permitido"}), 400
+    lancamento = lancamentos.buscar_por_id(lancamento_id)
 
-    if lancamentos.buscar_por_id(lancamento_id) is None: # Garante que o lançamento existe
+    if lancamento is None:
         return jsonify({"erro": "Lançamento não encontrado"}), 404
 
-    try:
-        video_id = videos.criar(titulo, youtube_id, url, thumbnail, duracao, lancamento_id)
+    try: # Tenta criar o vídeo chamando a função do model e retorna o resultado em json
+        video_id = videos.criar(
+            titulo,
+            youtube_id,
+            url,
+            thumbnail,
+            duracao,
+            lancamento_id
+        )
 
         return jsonify({
-            "mensagem": "Vídeo adicionado com sucesso",
+            "mensagem": "Vídeo cadastrado com sucesso",
             "id": video_id
         }), 201
 
     except Exception:
-        return jsonify({"erro": "Erro ao adicionar vídeo"}), 500
+        return jsonify({"erro": "Erro ao cadastrar vídeo"}), 500
