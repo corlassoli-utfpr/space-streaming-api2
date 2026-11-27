@@ -330,3 +330,371 @@ function mostrarLancamento(lancamento) {
     document.getElementById("lancamento-descricao").textContent =
         lancamento.descricao;
 }
+
+/* ---------- Autenticação, lançamentos e cadastro de vídeos ---------- */
+
+// Elementos do cabeçalho
+const areaDeslogado = document.getElementById("auth-deslogado");
+const areaLogado = document.getElementById("auth-logado");
+const usuarioNome = document.getElementById("usuario-nome");
+
+// Modais e formulários
+const modalLogin = document.getElementById("modal-login");
+const modalCadastro = document.getElementById("modal-cadastro");
+const formLogin = document.getElementById("form-login");
+const formCadastro = document.getElementById("form-cadastro");
+const formVideo = document.getElementById("form-video");
+const secaoNovoVideo = document.getElementById("secao-novo-video");
+
+const loginMsg = document.getElementById("login-msg");
+const cadastroMsg = document.getElementById("cadastro-msg");
+const videoMsg = document.getElementById("video-msg");
+
+const listaLancamentos = document.getElementById("lista-lancamentos");
+const selectLancamento = document.getElementById("video-lancamento");
+
+
+/* ---------- Funções auxiliares ---------- */
+
+// Envia JSON para a API e devolve sempre um objeto padronizado
+async function enviarJson(url, metodo, corpo) {
+
+    try {
+
+        const resposta = await fetch(url, {
+            method: metodo,
+            headers: { "Content-Type": "application/json" },
+            body: corpo ? JSON.stringify(corpo) : undefined
+        });
+
+        let dados = {};
+
+        try {
+            dados = await resposta.json();
+        } catch (erro) {
+            // Resposta sem JSON: mantém o objeto vazio
+        }
+
+        return { ok: resposta.ok, status: resposta.status, dados: dados };
+
+    } catch (erro) {
+
+        return {
+            ok: false,
+            status: 0,
+            dados: { erro: "Falha de conexão com o servidor." }
+        };
+    }
+}
+
+
+// Exibe uma mensagem de erro ou sucesso em um elemento <p class="mensagem">
+function mostrarMensagem(elemento, texto, tipo) {
+
+    elemento.textContent = texto;
+    elemento.className = "mensagem" + (texto ? " " + tipo : "");
+}
+
+
+// Limpa e abre um modal
+function abrirModal(modal, formulario, mensagem) {
+
+    formulario.reset();
+    mostrarMensagem(mensagem, "", "");
+
+    modal.showModal();
+}
+
+
+/* ---------- Estado de autenticação ---------- */
+
+function atualizarAutenticacao(autenticado, nome) {
+
+    // Alterna entre os botões de visitante e de usuário logado
+    areaDeslogado.hidden = autenticado;
+    areaLogado.hidden = !autenticado;
+
+    // Somente usuários logados podem adicionar vídeos
+    secaoNovoVideo.hidden = !autenticado;
+
+    usuarioNome.textContent = autenticado ? `Olá, ${nome}` : "";
+}
+
+
+async function verificarSessao() {
+
+    const resposta = await enviarJson("/auth/me", "GET");
+
+    atualizarAutenticacao(
+        resposta.dados.autenticado === true,
+        resposta.dados.usuario_nome
+    );
+}
+
+
+/* ---------- Abertura e fechamento dos modais ---------- */
+
+document.getElementById("btn-entrar").onclick = function() {
+    abrirModal(modalLogin, formLogin, loginMsg);
+};
+
+document.getElementById("btn-cadastrar").onclick = function() {
+    abrirModal(modalCadastro, formCadastro, cadastroMsg);
+};
+
+[modalLogin, modalCadastro].forEach(function(modal) {
+
+    // Botão "Cancelar"
+    modal.querySelector("[data-fechar]").onclick = function() {
+        modal.close();
+    };
+
+    // Clique fora da caixa (no fundo escuro) fecha o modal
+    modal.addEventListener("click", function(evento) {
+
+        if (evento.target === modal) {
+            modal.close();
+        }
+    });
+});
+
+
+/* ---------- Login ---------- */
+
+formLogin.addEventListener("submit", async function(evento) {
+
+    evento.preventDefault();
+
+    mostrarMensagem(loginMsg, "", "");
+
+    const resposta = await enviarJson("/auth/login", "POST", {
+        email: document.getElementById("login-email").value,
+        senha: document.getElementById("login-senha").value
+    });
+
+    if (!resposta.ok) {
+
+        mostrarMensagem(
+            loginMsg,
+            resposta.dados.erro || "Não foi possível entrar.",
+            "erro"
+        );
+
+        return;
+    }
+
+    modalLogin.close();
+
+    atualizarAutenticacao(true, resposta.dados.usuario.nome);
+});
+
+
+/* ---------- Cadastro ---------- */
+
+formCadastro.addEventListener("submit", async function(evento) {
+
+    evento.preventDefault();
+
+    mostrarMensagem(cadastroMsg, "", "");
+
+    const email = document.getElementById("cadastro-email").value;
+    const senha = document.getElementById("cadastro-senha").value;
+
+    const cadastro = await enviarJson("/usuarios", "POST", {
+        nome: document.getElementById("cadastro-nome").value,
+        email: email,
+        senha: senha
+    });
+
+    if (!cadastro.ok) {
+
+        mostrarMensagem(
+            cadastroMsg,
+            cadastro.dados.erro || "Não foi possível cadastrar.",
+            "erro"
+        );
+
+        return;
+    }
+
+    // Após cadastrar, já realiza o login automaticamente
+    const login = await enviarJson("/auth/login", "POST", {
+        email: email,
+        senha: senha
+    });
+
+    modalCadastro.close();
+
+    if (login.ok) {
+
+        atualizarAutenticacao(true, login.dados.usuario.nome);
+
+    } else {
+
+        // Se o login automático falhar, pede para entrar manualmente
+        abrirModal(modalLogin, formLogin, loginMsg);
+
+        mostrarMensagem(
+            loginMsg,
+            "Cadastro realizado! Faça login para continuar.",
+            "ok"
+        );
+    }
+});
+
+
+/* ---------- Botão "Adicionar vídeo" do cabeçalho ---------- */
+
+document.getElementById("btn-novo-video").onclick = function() {
+
+    // Rola suavemente até o formulário de novo vídeo
+    secaoNovoVideo.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // Coloca o cursor no primeiro campo, sem interromper a rolagem
+    document.getElementById("video-titulo").focus({ preventScroll: true });
+};
+
+
+/* ---------- Logout ---------- */
+
+document.getElementById("btn-sair").onclick = async function() {
+
+    await enviarJson("/auth/logout", "POST");
+
+    atualizarAutenticacao(false);
+
+    mostrarMensagem(videoMsg, "", "");
+};
+
+
+/* ---------- Lista de lançamentos ---------- */
+
+async function carregarLancamentos() {
+
+    const resposta = await enviarJson("/lancamentos", "GET");
+
+    listaLancamentos.innerHTML = "";
+
+    if (!resposta.ok || !Array.isArray(resposta.dados)) {
+
+        const item = document.createElement("li");
+        item.textContent = "Não foi possível carregar os lançamentos.";
+        listaLancamentos.appendChild(item);
+
+        return;
+    }
+
+    if (resposta.dados.length === 0) {
+
+        const item = document.createElement("li");
+        item.textContent = "Nenhum lançamento cadastrado.";
+        listaLancamentos.appendChild(item);
+
+        return;
+    }
+
+    resposta.dados.forEach(function(lancamento) {
+
+        // Item da lista de lançamentos
+        const item = document.createElement("li");
+
+        const nome = document.createElement("strong");
+        nome.textContent = lancamento.nome;
+
+        const empresa = document.createElement("small");
+        empresa.textContent = lancamento.empresa;
+
+        item.appendChild(nome);
+        item.appendChild(empresa);
+
+        listaLancamentos.appendChild(item);
+
+        // Opção correspondente no formulário de novo vídeo
+        const opcao = document.createElement("option");
+        opcao.value = lancamento.id;
+        opcao.textContent = `${lancamento.nome} · ${lancamento.empresa}`;
+
+        selectLancamento.appendChild(opcao);
+    });
+}
+
+
+/* ---------- Novo vídeo ---------- */
+
+// Ao colar a URL do YouTube, preenche o ID e a thumbnail automaticamente
+document.getElementById("video-url").addEventListener("input", function() {
+
+    const encontrado = this.value.match(
+        /(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)([\w-]{11})/
+    );
+
+    if (!encontrado) {
+        return;
+    }
+
+    const id = encontrado[1];
+    const thumbnail = document.getElementById("video-thumbnail");
+
+    document.getElementById("video-youtube-id").value = id;
+
+    if (!thumbnail.value) {
+        thumbnail.value = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+    }
+});
+
+
+formVideo.addEventListener("submit", async function(evento) {
+
+    evento.preventDefault();
+
+    mostrarMensagem(videoMsg, "", "");
+
+    const resposta = await enviarJson("/videos", "POST", {
+        titulo: document.getElementById("video-titulo").value,
+        youtube_id: document.getElementById("video-youtube-id").value,
+        url: document.getElementById("video-url").value,
+        thumbnail: document.getElementById("video-thumbnail").value,
+        duracao: document.getElementById("video-duracao").value,
+        lancamento_id: Number(selectLancamento.value)
+    });
+
+    // Sessão expirada: volta para o estado deslogado e pede novo login
+    if (resposta.status === 401) {
+
+        atualizarAutenticacao(false);
+        abrirModal(modalLogin, formLogin, loginMsg);
+
+        mostrarMensagem(
+            loginMsg,
+            "Sua sessão expirou. Entre novamente.",
+            "erro"
+        );
+
+        return;
+    }
+
+    if (!resposta.ok) {
+
+        mostrarMensagem(
+            videoMsg,
+            resposta.dados.erro || "Não foi possível adicionar o vídeo.",
+            "erro"
+        );
+
+        videoMsg.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+        return;
+    }
+
+    formVideo.reset();
+
+    mostrarMensagem(videoMsg, "Vídeo adicionado com sucesso!", "ok");
+
+    videoMsg.scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+
+
+/* ---------- Inicialização ---------- */
+
+verificarSessao();
+carregarLancamentos();

@@ -239,6 +239,145 @@ footer {
 }
 
 
+/* ---------- Atributo hidden ---------- */
+
+[hidden] {
+    display: none !important;
+}
+
+
+/* ---------- Autenticação no cabeçalho ---------- */
+
+.barra {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.auth-grupo {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.auth button {
+    padding: 8px 14px;
+    font-size: 0.9rem;
+}
+
+#usuario-nome {
+    color: var(--texto-suave);
+}
+
+
+/* ---------- Modais de login e cadastro ---------- */
+
+dialog {
+    width: min(420px, 90vw);
+    padding: 25px;
+    border: 1px solid var(--borda);
+    border-radius: 3px;
+    background: var(--superficie);
+    color: var(--texto);
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+dialog h2 {
+    margin-bottom: 18px;
+}
+
+.form-coluna {
+    flex-direction: column;
+}
+
+.form-coluna input {
+    flex: none;
+    min-width: 0;
+    background: var(--fundo);
+}
+
+.acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.mensagem {
+    margin: 0;
+    min-height: 1.5em;
+    font-size: 0.9rem;
+}
+
+.mensagem.erro {
+    padding-left: 10px;
+    border-left: 3px solid var(--texto);
+    color: var(--texto);
+}
+
+.mensagem.ok {
+    color: var(--texto-suave);
+}
+
+
+/* ---------- Lançamentos e novo vídeo ---------- */
+
+.lista-simples {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--borda);
+    background: var(--superficie);
+}
+
+.lista-simples li {
+    padding: 14px;
+    border-bottom: 1px solid var(--borda);
+}
+
+.lista-simples li:last-child {
+    border-bottom: 0;
+}
+
+.lista-simples small {
+    display: block;
+    margin-top: 4px;
+    color: var(--texto-suave);
+}
+
+.form-video {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 20px;
+    border: 1px solid var(--borda);
+    background: var(--superficie);
+}
+
+.form-video input {
+    min-width: 0;
+    background: var(--fundo);
+}
+
+.form-video select {
+    background: var(--fundo);
+}
+
+.form-video .mensagem,
+.form-video button {
+    grid-column: 1 / -1;
+}
+
+.form-video button {
+    justify-self: start;
+}
+
+
 /* ---------- Responsividade ---------- */
 
 @media (max-width: 800px) {
@@ -254,5 +393,17 @@ footer {
 
     input {
         flex: none;
+    }
+
+    .form-video {
+        grid-template-columns: 1fr;
+    }
+
+    .form-video button {
+        justify-self: stretch;
+    }
+
+    .auth button {
+        width: auto;
     }
 }
