@@ -118,4 +118,4 @@ def fechar_conexao(exception=None):
 
 if __name__ == "__main__":
     app.run(port=3000, host='0.0.0.0', debug=True, use_reloader=False)
-    # Removemos o reloader pois ao recarregar o código solicitava a senha do banco múltiplas vezes no desenvolvimentoG
+    # Removemos o reloader pois ao recarregar o código solicitava a senha do banco múltiplas vezes no desenvolvimento
